@@ -4,8 +4,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
 
+
+class conv2d(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True):
+        super(conv2d, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels,
+                              kernel_size, stride, padding, dilation, groups, bias)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+
+
 class FactorizedNoisyLinear(nn.Module):
-    # Factorized Noisy Linear
+
     def __init__(self, num_in, num_out, is_training=True):
         super(FactorizedNoisyLinear, self).__init__()
         self.num_in = num_in
@@ -53,7 +70,3 @@ class FactorizedNoisyLinear(nn.Module):
         eps_j = torch.randn(self.num_out)
         self.epsilon_i = eps_i.sign() * (eps_i.abs()).sqrt()
         self.epsilon_j = eps_j.sign() * (eps_j.abs()).sqrt()
-
-if __name__ == '__main__':
-    print('hello world')
-    noisylayer = FactorizedNoisyLinear(10, 10)
