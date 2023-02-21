@@ -7,7 +7,7 @@ import torch.autograd as autograd
 
 class Conv2dLayer(nn.Module):
 
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size,stride=1, padding=0, dilation=1, groups=1, bias=True):
         super(Conv2dLayer, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels,
                               kernel_size, stride, padding, dilation, groups, bias)
