@@ -77,6 +77,24 @@ class Dueling_DQN_Net(nn.Module):
         value = self.fc3(x)
         return value + advantage - advantage.mean()
 
+class A2C_Net(nn.module):
+    def __init__(self, input_channels, width, action_dim, hidden_dim):
+        super(A2C_Net, self).__init__()
+        self.feature = Conv_block(input_channels, width)
+        self.feature_dim = self.feature.get_feature_dim()
+        self.fc1 = nn.Linear(self.feature_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, action_dim) # actor
+        self.fc3 = nn.Linear(hidden_dim, 1) # critic
+        self.leaky_relu = nn.LeakyReLU(0.2)
+
+    def forward(self, x):
+        x = self.feature(x)
+        x = self.fc1(x)
+        x = self.leaky_relu(x)
+        action = self.fc2(x)
+        value = self.fc3(x)
+        return action, value
+
 if __name__ == '__main__':
     # test
     x = torch.randn(2, 4, 224, 224)
