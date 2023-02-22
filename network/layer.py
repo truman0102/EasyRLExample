@@ -6,8 +6,11 @@ import torch.autograd as autograd
 
 
 class Conv2dLayer(nn.Module):
+    """
+    Conv2d + BatchNorm2d + ReLU
+    """
 
-    def __init__(self, in_channels, out_channels, kernel_size,stride=1, padding=0, dilation=1, groups=1, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True):
         super(Conv2dLayer, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels,
                               kernel_size, stride, padding, dilation, groups, bias)
@@ -22,6 +25,10 @@ class Conv2dLayer(nn.Module):
 
 
 class FactorizedNoisyLinear(nn.Module):
+    """
+    Factorized Noisy Linear Layer
+    """
+
     def __init__(self, num_in, num_out, is_training=True):
         super(FactorizedNoisyLinear, self).__init__()
         self.num_in = num_in
@@ -39,15 +46,13 @@ class FactorizedNoisyLinear(nn.Module):
         self.reset_noise()
 
     def forward(self, x):
-        self.reset_noise()
+        self.reset_noise()  # reset noise at every forward
 
         if self.is_training:
             epsilon_weight = self.epsilon_j.ger(self.epsilon_i)
             epsilon_bias = self.epsilon_j
-            weight = self.mu_weight + \
-                self.sigma_weight.mul(autograd.Variable(epsilon_weight))
-            bias = self.mu_bias + \
-                self.sigma_bias.mul(autograd.Variable(epsilon_bias))
+            weight = self.mu_weight + self.sigma_weight.mul(autograd.Variable(epsilon_weight))
+            bias = self.mu_bias + self.sigma_bias.mul(autograd.Variable(epsilon_bias))
         else:
             weight = self.mu_weight
             bias = self.mu_bias
@@ -70,14 +75,9 @@ class FactorizedNoisyLinear(nn.Module):
         self.epsilon_i = eps_i.sign() * (eps_i.abs()).sqrt()
         self.epsilon_j = eps_j.sign() * (eps_j.abs()).sqrt()
 
-if __name__ == '__main__':
-    # test
-    x = torch.randn(1, 4, 224, 224)
-    conv = Conv2dLayer(4, 32, 8, 4)
-    y = conv(x)
-    print(y.shape)
 
-    x = torch.randn(1, 4)
-    linear = FactorizedNoisyLinear(4, 32)
-    y = linear(x)
+if __name__ == "__main__":
+    x = torch.randn(1, 4, 224, 224)
+    lay = Conv2dLayer(in_channels=4,out_channels=16,kernel_size=3)
+    y = lay(x)
     print(y.shape)
