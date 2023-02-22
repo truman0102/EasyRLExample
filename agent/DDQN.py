@@ -33,7 +33,7 @@ class DDQN:
         self.learn_step_counter += 1  # 记录学习的次数
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             self.target_net.load_state_dict(self.eval_net.state_dict())
-        states, actions, rewards, next_states = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
+        states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
         # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
         states = torch.from_numpy(states).float().to(self.device)
         actions = torch.from_numpy(actions).long().to(self.device)

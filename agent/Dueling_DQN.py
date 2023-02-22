@@ -19,8 +19,8 @@ class DuelingDQN:
         self.learn_step_counter = 0
         self.memory = ReplayBuffer(capacity)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.eval_net = DuelingDQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
-        self.target_net = DuelingDQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
+        self.eval_net = Dueling_DQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
+        self.target_net = Dueling_DQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=self.lr)
         self.loss_func = torch.nn.MSELoss()
 
@@ -34,7 +34,7 @@ class DuelingDQN:
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             self.target_net.load_state_dict(self.eval_net.state_dict())
-        states, actions, rewards, next_states = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
+        states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
         # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
         states = torch.from_numpy(states).float().to(self.device)
         actions = torch.from_numpy(actions).long().to(self.device)

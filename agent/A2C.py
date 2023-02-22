@@ -61,8 +61,3 @@ class A2C:
                 print(loss.item())
             if step_idx == 200:
                 break
-
-
-if __name__ == "__main__":
-    agent = A2C(input_channels=4, width=224, action_dim=2, hidden_dim=512, learning_rate=0.001, gamma=0.99)
-    agent.train()
