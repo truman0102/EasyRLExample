@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from network.body import Conv_block, MLP_block
 from utils.sample import ReplayBuffer
+from utils.update import hard_update
 
 class DQN_Net(nn.Module):
     """
@@ -40,7 +41,6 @@ class DDQN:
         self.eval_net = DQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
         self.target_net = DQN_Net(input_channels, width, action_dim, hidden_dim, noisy).to(self.device)
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=self.lr)
-        self.loss = torch.nn.MSELoss()
 
     def decrement_epsilon(self):
         self.eplison = self.eplison - self.eps_dec if self.eplison > self.eps_min else self.eps_min
@@ -48,9 +48,9 @@ class DDQN:
     def learn(self):
         if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
-        self.learn_step_counter += 1  # 记录学习的次数
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
-            self.target_net.load_state_dict(self.eval_net.state_dict())
+            # self.target_net.load_state_dict(self.eval_net.state_dict())
+            hard_update(self.target_net,self.eval_net)
         states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
         # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
         states = torch.from_numpy(states).float().to(self.device)
@@ -70,3 +70,4 @@ class DDQN:
         loss.backward()
         self.optimizer.step()
         self.decrement_epsilon()
+        self.learn_step_counter += 1  # 记录学习的次数

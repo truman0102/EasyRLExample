@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from utils.sample import ReplayBuffer
 from utils.update import soft_update
 from network.actor import policy_net
-from network.critic import TD3_Critic_Net
+from network.critic import Twin_Value_Net
 
 
 class TD3:
@@ -18,7 +18,7 @@ class TD3:
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=learning_rate)
 
-        self.critic = TD3_Critic_Net(input_channels=input_channels, width=width, action_dim=action_dim, noisy=noisy).to(self.device)
+        self.critic = Twin_Value_Net(input_channels=input_channels, width=width, action_dim=action_dim, noisy=noisy).to(self.device)
         self.critic_target = copy.deepcopy(self.critic).to(self.device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=learning_rate)
 
@@ -33,7 +33,7 @@ class TD3:
     def train(self, training: bool = True):
         if self.memory.__len__ < self.batch_size:
             return
-
+        self.learn_step_counter+=1
         self.actor.training = training
         self.actor_target.training = training
         self.critic.training = training

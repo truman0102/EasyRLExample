@@ -18,8 +18,10 @@ class DDPG:
 
         self.policy_net = policy_net(input_channels, width, action_dim, noisy, training).to(self.device)
         self.target_policy_net = policy_net(input_channels, width, action_dim, noisy, training).to(self.device)
+        self.target_policy_net.eval()
         self.value_net = value_net(input_channels, width, noisy, training).to(self.device)
         self.target_value_net = value_net(input_channels, width, noisy, training).to(self.device)
+        self.target_value_net.eval()
 
         self.policy_net_optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=learning_rate)
         self.value_net_optimizer = torch.optim.Adam(self.value_net.parameters(), lr=learning_rate)

@@ -19,9 +19,9 @@ class value_net(nn.Module):
         x = self.fc(x)
         return x
 
-class TD3_Critic_Net(nn.Module):
+class Twin_Value_Net(nn.Module):
     def __init__(self, input_channels, width, action_dim, hidden_dim=256, noisy=False, trainging=False):
-        super(TD3_Critic_Net, self).__init__()
+        super(Twin_Value_Net, self).__init__()
         self.feature = Conv_block(input_channels, width)
         self.feature_dim = self.feature.get_feature_dim()
         # Q1

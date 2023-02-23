@@ -44,7 +44,6 @@ class DuelingDQN:
     def learn(self):
         if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
-        self.learn_step_counter += 1  # 记录学习的次数
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
@@ -64,3 +63,4 @@ class DuelingDQN:
         loss.backward()  # 反向传播
         self.optimizer.step()  # 更新参数
         self.decrement_epsilon()  # 贪婪因子衰减
+        self.learn_step_counter += 1  # 记录学习的次数
