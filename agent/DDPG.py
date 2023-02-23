@@ -1,8 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from utils.sample import ReplayBuffer
-from network.body import policy_net, value_net
+from network.actor import policy_net
+from network.critic import value_net
 from utils.update import soft_update, hard_update
 
 
@@ -26,7 +26,7 @@ class DDPG:
         self.memory = ReplayBuffer(capacity)
         self.learn_step_counter = 0
         # self.loss = nn.MSELoss()
-        self.tau = tau
+        self.tau = tau # soft update parameter
 
     def hard_update(self, target, source):
         for target_param, param in zip(target.parameters(), source.parameters()):
@@ -54,14 +54,14 @@ class DDPG:
         next_stage = torch.from_numpy(next_stage).float().to(self.device)
         done = torch.from_numpy(done).float().to(self.device)
 
-        target = reward + self.gamma * self.target_value_net(next_stage, self.target_policy_net(next_stage)) * (
-                    1 - done)
+        # 用真实的奖励和下一步的Q来拟合当前的Q 然后让价值网络的输出逼近这个Q
+        target = reward + self.gamma * self.target_value_net(next_stage, self.target_policy_net(next_stage)) * (1 - done)
         value_loss = F.smooth_l1_loss(self.value_net(stage, action), target.detach())  # 这里的损失函数也可以用MSE
         self.value_net_optimizer.zero_grad()
         value_loss.backward()
         self.value_net_optimizer.step()
-
-        policy_loss = -self.value_net(stage, self.policy_net(stage)).mean()
+        # 策略网络的目的是让价值网络的输出最大化，所以这里的损失函数是价值网络的输出的负值，输出越大损失越小
+        policy_loss = -self.value_net(stage, self.policy_net(stage)).mean() # 取均值是因为要求的是一个batch的平均值
         self.policy_net_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_net_optimizer.step()

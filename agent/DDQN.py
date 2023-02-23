@@ -1,7 +1,25 @@
 import torch
-from network.body import DQN_Net
+import torch.nn as nn
+import torch.nn.functional as F
+from network.body import Conv_block, MLP_block
 from utils.sample import ReplayBuffer
 
+class DQN_Net(nn.Module):
+    """
+    input : stage
+    output: Q(s,a) for all a
+    batch_size, input_channels, width, width = input.shape
+    """
+    def __init__(self, input_channels, width, action_dim, hidden_dim, noisy=False, training=False):
+        super(DQN_Net, self).__init__()
+        self.feature = Conv_block(input_channels, width)
+        self.feature_dim = self.feature.get_feature_dim()
+        self.fc = MLP_block(self.feature_dim, hidden_dim, action_dim, noisy, training)
+
+    def forward(self, x):
+        x = self.feature(x)
+        x = self.fc(x)
+        return x
 
 class DDQN:
     def __init__(self, input_channels, width, action_dim, hidden_dim, batch_size, capacity, learning_rate, gamma,
@@ -39,12 +57,15 @@ class DDQN:
         actions = torch.from_numpy(actions).long().to(self.device)
         rewards = torch.from_numpy(rewards).float().to(self.device)
         next_states = torch.from_numpy(next_states).float().to(self.device)
-        q_eval = self.eval_net.forward(states).gather(1, actions.unsqueeze(1)).squeeze(
-            1)  # q_eval.shape = (batch_size,1)
+        done = torch.from_numpy(done).float().to(self.device)
+
+        
+        q_eval = self.eval_net.forward(states).gather(1, actions.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
         argmax_a = self.eval_net.forward(next_states).argmax(1).unsqueeze(1)  # argmax_a.shape = (batch_size,1)
+        # 使用目标网络计算q_next
         q_next = self.target_net.forward(next_states).gather(1, argmax_a).squeeze(1)  # q_next.shape = (batch_size,1)
-        q_target = rewards + self.gamma * q_next
-        loss = self.loss(q_eval, q_target)
+        q_target = rewards + self.gamma * q_next * (1 - done) # q_target.shape = (batch_size,1)
+        loss = F.mse_loss(q_eval, q_target)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
