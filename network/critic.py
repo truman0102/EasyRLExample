@@ -14,8 +14,8 @@ class value_net(nn.Module):
         self.fc = MLP_block(self.feature_dim+action_dim, hidden_dim_s+hidden_dim_a, 1, noisy, trainging)
 
     def forward(self, x, action):
-        x = torch.cat([x, action], dim=1)
         x = self.feature(x)
+        x = torch.cat([x, action], dim=1)
         x = self.fc(x)
         return x
 

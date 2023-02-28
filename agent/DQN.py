@@ -67,20 +67,14 @@ class DQN:
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
         
-        states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
-        # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
-        states = torch.from_numpy(states).float().to(self.device)
-        actions = torch.from_numpy(actions).long().to(self.device)
-        rewards = torch.from_numpy(rewards).float().to(self.device)
-        next_states = torch.from_numpy(next_states).float().to(self.device)
-        done = torch.from_numpy(done).float().to(self.device)
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
 
         # 根据评估网络预测当前状态下的Q值
-        q_eval = self.eval_net.forward(states).gather(1, actions.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
+        q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
         # 根据目标网络计算下一个状态下的Q值
-        q_next = self.target_net.forward(next_states).detach()  # q_next.shape = (batch_size,action_dim)
+        q_next = self.target_net.forward(next_stage).detach()  # q_next.shape = (batch_size,action_dim)
         # 根据当前状态和下一个状态的Q值计算目标Q值，取下一个状态下的最大Q值
-        q_target = rewards + self.gamma * torch.max(q_next, 1)[0]  # q_target.shape = (batch_size,1)
+        q_target = reward + self.gamma * torch.max(q_next, 1)[0]  # q_target.shape = (batch_size,1)
         # 计算损失
         loss = F.mse_loss(q_eval, q_target)  # 计算损失
         self.optimizer.zero_grad()  # 梯度清零
@@ -127,24 +121,18 @@ class DQNs:
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
-        states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
-        # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
-        states = torch.from_numpy(states).float().to(self.device)
-        actions = torch.from_numpy(actions).long().to(self.device)
-        rewards = torch.from_numpy(rewards).float().to(self.device)
-        next_states = torch.from_numpy(next_states).float().to(self.device)
-        done = torch.from_numpy(done).float().to(self.device)
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
 
         # 根据评估网络预测当前状态下的Q值
-        q_eval = self.eval_net.forward(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+        q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)
         if self.DDQN:
-            argmax_a = self.eval_net.forward(next_states).argmax(1).unsqueeze(1)  # 更新网络选取动作
+            argmax_a = self.eval_net.forward(next_stage).argmax(1).unsqueeze(1)  # 更新网络选取动作
             # 根据目标网络计算下一个状态下全部动作的Q值,并根据更新网络选取的动作，选取Q值
-            q_next = self.target_net.forward(next_states).gather(1, argmax_a).squeeze(1)
+            q_next = self.target_net.forward(next_stage).gather(1, argmax_a).squeeze(1)
         else:
             # 根据目标网络计算下一个状态下的Q值，并选取最大的Q值
-            q_next = self.target_net.forward(next_states).detach().max(1)[0]  # 目标网络选取动作
-        q_target = rewards + self.gamma * q_next
+            q_next = self.target_net.forward(next_stage).detach().max(1)[0]  # 目标网络选取动作
+        q_target = reward + self.gamma * q_next
         loss = F.mse_loss(q_eval, q_target)  # 计算损失
         self.optimizer.zero_grad()  # 梯度清零
         loss.backward()  # 反向传播

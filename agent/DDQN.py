@@ -51,20 +51,15 @@ class DDQN:
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # self.target_net.load_state_dict(self.eval_net.state_dict())
             hard_update(self.target_net,self.eval_net)
-        states, actions, rewards, next_states,done = self.memory.sample_buffer(self.batch_size)  # 从记忆库中随机抽取batch_size个样本
         # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
-        states = torch.from_numpy(states).float().to(self.device)
-        actions = torch.from_numpy(actions).long().to(self.device)
-        rewards = torch.from_numpy(rewards).float().to(self.device)
-        next_states = torch.from_numpy(next_states).float().to(self.device)
-        done = torch.from_numpy(done).float().to(self.device)
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size))) # 从记忆库中随机抽取batch_size个样本
 
         
-        q_eval = self.eval_net.forward(states).gather(1, actions.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
-        argmax_a = self.eval_net.forward(next_states).argmax(1).unsqueeze(1)  # argmax_a.shape = (batch_size,1)
+        q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
+        argmax_a = self.eval_net.forward(next_stage).argmax(1).unsqueeze(1)  # argmax_a.shape = (batch_size,1)
         # 使用目标网络计算q_next
-        q_next = self.target_net.forward(next_states).gather(1, argmax_a).squeeze(1)  # q_next.shape = (batch_size,1)
-        q_target = rewards + self.gamma * q_next * (1 - done) # q_target.shape = (batch_size,1)
+        q_next = self.target_net.forward(next_stage).gather(1, argmax_a).squeeze(1)  # q_next.shape = (batch_size,1)
+        q_target = reward + self.gamma * q_next * (1 - done) # q_target.shape = (batch_size,1)
         loss = F.mse_loss(q_eval, q_target)
         self.optimizer.zero_grad()
         loss.backward()

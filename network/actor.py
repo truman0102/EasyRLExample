@@ -10,7 +10,7 @@ class policy_net(nn.Module):
     output: action distribution
     """
 
-    def __init__(self, input_channels, width, action_dim, hidden_dim=512, noisy=False, trainging=False):
+    def __init__(self, input_channels:int, width:int, action_dim:int, hidden_dim=512, noisy=False, trainging=False):
         super(policy_net, self).__init__()
         self.feature = Conv_block(input_channels, width)
         self.feature_dim = self.feature.get_feature_dim()
@@ -28,7 +28,7 @@ class GaussianPolicy(nn.Module):
     LOG_STD_MIN = -20
     eps = 1e-6
 
-    def __init__(self, input_channels, width, action_dim, max_action, hidden_dim=512):
+    def __init__(self, input_channels:int, width:int, action_dim:int, max_action, hidden_dim=512):
         super(GaussianPolicy, self).__init__()
         self.feature = Conv_block(input_channels, width)
         self.feature_dim = self.feature.get_feature_dim()

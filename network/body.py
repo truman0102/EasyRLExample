@@ -75,29 +75,29 @@ class DoubleHead_MLP_block(nn.Module):
         return x
 
 
-class MLP_block_Q(nn.Module):
-    """
-    input: stage, action
-    output: Q(s,a)
-    """
-    def __init__(self, input_dim,action_dim, hidden_dim_a,hidden_dim_s, output_dim=1, noisy=False, training=False):
-        if noisy:
-            self.fc1 = FactorizedNoisyLinear(input_dim, hidden_dim_s, is_training=training)
-            self.fc2 = FactorizedNoisyLinear(action_dim,hidden_dim_a, is_training=training)
-            self.fc3 = FactorizedNoisyLinear(hidden_dim_s+hidden_dim_a, output_dim, is_training=training)
-        else:
-            self.fc1 = nn.Linear(input_dim, hidden_dim_s)
-            self.fc2 = nn.Linear(action_dim, hidden_dim_a)
-            self.fc3 = nn.Linear(hidden_dim_s+hidden_dim_a, output_dim)
+# class MLP_block_Q(nn.Module):
+#     """
+#     input: stage, action
+#     output: Q(s,a)
+#     """
+#     def __init__(self, input_dim,action_dim, hidden_dim_a,hidden_dim_s, output_dim=1, noisy=False, training=False):
+#         if noisy:
+#             self.fc1 = FactorizedNoisyLinear(input_dim, hidden_dim_s, is_training=training)
+#             self.fc2 = FactorizedNoisyLinear(action_dim,hidden_dim_a, is_training=training)
+#             self.fc3 = FactorizedNoisyLinear(hidden_dim_s+hidden_dim_a, output_dim, is_training=training)
+#         else:
+#             self.fc1 = nn.Linear(input_dim, hidden_dim_s)
+#             self.fc2 = nn.Linear(action_dim, hidden_dim_a)
+#             self.fc3 = nn.Linear(hidden_dim_s+hidden_dim_a, output_dim)
         
-        self.leaky_relu = nn.LeakyReLU(0.2)
+#         self.leaky_relu = nn.LeakyReLU(0.2)
     
-    def forward(self, x, a):
-        x = self.fc1(x)
-        x = self.leaky_relu(x)
-        a = self.fc2(a)
-        a = self.leaky_relu(a)
-        x = torch.cat([x,a],dim=1)
-        x = self.fc3(x)
-        return x
-        return torch.tanh(x)
+#     def forward(self, x, a):
+#         x = self.fc1(x)
+#         x = self.leaky_relu(x)
+#         a = self.fc2(a)
+#         a = self.leaky_relu(a)
+#         x = torch.cat([x,a],dim=1)
+#         x = self.fc3(x)
+#         return x
+#         return torch.tanh(x)

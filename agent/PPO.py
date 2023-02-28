@@ -1,10 +1,10 @@
 
 
-class PPO():
+class PPO:
     pass
 
-class PPO1():
+class PPO1:
     pass
 
-class PPO2():
+class PPO2:
     pass

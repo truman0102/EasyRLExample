@@ -49,12 +49,7 @@ class DDPG:
         #     hard_update(self.target_value_net, self.value_net)
         self.learn_step_counter += 1
 
-        stage, action, reward, next_stage, done = self.memory.sample(self.batch_size)
-        stage = torch.from_numpy(stage).float().to(self.device)
-        action = torch.from_numpy(action).float().to(self.device)
-        reward = torch.from_numpy(reward).float().to(self.device)
-        next_stage = torch.from_numpy(next_stage).float().to(self.device)
-        done = torch.from_numpy(done).float().to(self.device)
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
 
         # 用真实的奖励和下一步的Q来拟合当前的Q 然后让价值网络的输出逼近这个Q
         target = reward + self.gamma * self.target_value_net(next_stage, self.target_policy_net(next_stage)) * (1 - done)

@@ -35,12 +35,7 @@ class SAC:
         if self.memory.__len__ < self.batch_size:
             return
         self.learn_step_counter+=1
-        stage, action, reward, next_stage, done = self.memory.sample(self.batch_size)
-        stage = torch.from_numpy(stage).float().to(self.device)
-        action = torch.from_numpy(action).float().to(self.device)
-        reward = torch.from_numpy(reward).float().to(self.device)
-        next_stage = torch.from_numpy(next_stage).float().to(self.device)
-        done = torch.from_numpy(done).float().to(self.device)
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
 
         with torch.no_grad():
             new_action, log_prob, _,_,_ = self.actor.evaluate(next_stage)
