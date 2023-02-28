@@ -30,14 +30,6 @@ class DDPG:
         # self.loss = nn.MSELoss()
         self.tau = tau # soft update parameter
 
-    def hard_update(self, target, source):
-        for target_param, param in zip(target.parameters(), source.parameters()):
-            target_param.data.copy_(param.data)
-
-    def soft_update(self, target, source):
-        for target_param, param in zip(target.parameters(), source.parameters()):
-            target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
-
     def train(self):
         if self.memory.__len__ < self.batch_size:
             return
