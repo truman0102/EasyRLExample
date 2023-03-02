@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from collections import deque, namedtuple
 
 Transition = namedtuple(
@@ -13,12 +14,13 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=capacity)  # 缓冲区
 
     def push(self, transition):
-        # transition = (state, action, next_state, reward)
+        # transition = (state, action, next_state, reward, done)
         self.buffer.append(Transition(*transition))
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         return zip(*batch)  # 返回5个元组，分别是state, action, reward, next_state, done
-
-    def __len__(self):
+    
+    @property
+    def size(self):
         return len(self.buffer)

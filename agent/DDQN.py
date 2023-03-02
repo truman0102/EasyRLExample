@@ -1,9 +1,11 @@
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from network.body import Conv_block, MLP_block
 from utils.sample import ReplayBuffer
 from utils.update import hard_update
+
 
 class DQN_Net(nn.Module):
     """
@@ -11,6 +13,7 @@ class DQN_Net(nn.Module):
     output: Q(s,a) for all a
     batch_size, input_channels, width, width = input.shape
     """
+
     def __init__(self, input_channels, width, action_dim, hidden_dim, noisy=False, training=False):
         super(DQN_Net, self).__init__()
         self.feature = Conv_block(input_channels, width)
@@ -21,6 +24,7 @@ class DQN_Net(nn.Module):
         x = self.feature(x)
         x = self.fc(x)
         return x
+
 
 class DDQN:
     def __init__(self, input_channels, width, action_dim, hidden_dim, batch_size, capacity, learning_rate, gamma,
@@ -46,20 +50,21 @@ class DDQN:
         self.eplison = self.eplison - self.eps_dec if self.eplison > self.eps_min else self.eps_min
 
     def learn(self):
-        if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
+        if self.memory.size() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # self.target_net.load_state_dict(self.eval_net.state_dict())
-            hard_update(self.target_net,self.eval_net)
+            hard_update(self.target_net, self.eval_net)
         # tensor默认是从numpy转换过来的，memory中的数据需要是numpy格式
-        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size))) # 从记忆库中随机抽取batch_size个样本
+        stage, action, reward, next_stage, done = tuple(
+            map(lambda x: torch.from_numpy(np.array(x)).float().to(self.device),
+                self.memory.sample(self.batch_size)))  # 从记忆库中随机抽取batch_size个样本
 
-        
         q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
         argmax_a = self.eval_net.forward(next_stage).argmax(1).unsqueeze(1)  # argmax_a.shape = (batch_size,1)
         # 使用目标网络计算q_next
         q_next = self.target_net.forward(next_stage).gather(1, argmax_a).squeeze(1)  # q_next.shape = (batch_size,1)
-        q_target = reward + self.gamma * q_next * (1 - done) # q_target.shape = (batch_size,1)
+        q_target = reward + self.gamma * q_next * (1 - done)  # q_target.shape = (batch_size,1)
         loss = F.mse_loss(q_eval, q_target)
         self.optimizer.zero_grad()
         loss.backward()

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn.functional as F
 from utils.sample import ReplayBuffer
 from network.actor import policy_net
@@ -31,7 +32,7 @@ class DDPG:
         self.tau = tau # soft update parameter
 
     def train(self):
-        if self.memory.__len__ < self.batch_size:
+        if self.memory.size< self.batch_size:
             return
         # hard_update每隔一段时间更新一次target_net，soft_update每次更新都更新一次target_net
         soft_update(self.target_policy_net, self.policy_net, tau=self.tau)
@@ -41,7 +42,7 @@ class DDPG:
         #     hard_update(self.target_value_net, self.value_net)
         self.learn_step_counter += 1
 
-        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
+        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(np.array(x)).float().to(self.device),self.memory.sample(self.batch_size)))
 
         # 用真实的奖励和下一步的Q来拟合当前的Q 然后让价值网络的输出逼近这个Q
         target = reward + self.gamma * self.target_value_net(next_stage, self.target_policy_net(next_stage)) * (1 - done)

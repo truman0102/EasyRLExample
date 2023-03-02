@@ -1,9 +1,11 @@
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from network.body import Conv_block,DoubleHead_MLP_block
+from network.body import Conv_block, DoubleHead_MLP_block
 from utils.sample import ReplayBuffer
 from utils.update import hard_update
+
 
 class Dueling_DQN_Net(nn.Module):
     # batch_size, input_channels, width, width = input.shape
@@ -17,6 +19,7 @@ class Dueling_DQN_Net(nn.Module):
         x = self.feature(x)
         advantage, value = self.fc(x)
         return value + advantage - advantage.mean()
+
 
 class DuelingDQN:
     def __init__(self, input_channels, width, action_dim, hidden_dim, batch_size, capacity, learning_rate, gamma,
@@ -42,12 +45,13 @@ class DuelingDQN:
         self.eplison = self.eplison - self.eps_dec if self.eplison > self.eps_min else self.eps_min
 
     def learn(self):
-        if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
+        if self.memory.size < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
-        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
+        stage, action, reward, next_stage, done = tuple(
+            map(lambda x: torch.from_numpy(np.array(x)).float().to(self.device), self.memory.sample(self.batch_size)))
 
         q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
         q_next = self.target_net.forward(next_stage).detach()  # q_next.shape = (batch_size,action_dim)

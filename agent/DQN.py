@@ -1,9 +1,11 @@
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from network.body import Conv_block, MLP_block, DoubleHead_MLP_block
 from utils.sample import ReplayBuffer
 from utils.update import hard_update
+
 
 class DQN_Net(nn.Module):
     """
@@ -11,6 +13,7 @@ class DQN_Net(nn.Module):
     output: Q(s,a) for all a
     batch_size, input_channels, width, width = input.shape
     """
+
     def __init__(self, input_channels, width, action_dim, hidden_dim, noisy=False, training=False):
         super(DQN_Net, self).__init__()
         self.feature = Conv_block(input_channels, width)
@@ -36,6 +39,7 @@ class Dueling_DQN_Net(nn.Module):
         advantage, value = self.fc(x)
         return value + advantage - advantage.mean()
 
+
 class DQN:
     def __init__(self, input_channels, width, action_dim, hidden_dim, batch_size, capacity, learning_rate, gamma,
                  e_greedy, replace_target_iter, noisy, eps_min=0.01, eps_dec=5e-7, checkpoint_dir=''):
@@ -60,14 +64,15 @@ class DQN:
         self.eplison = self.eplison - self.eps_dec if self.eplison > self.eps_min else self.eps_min
 
     def learn(self):
-        if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
+        if self.memory.size < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
         self.learn_step_counter += 1  # 记录学习的次数
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
-        
-        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
+
+        stage, action, reward, next_stage, done = tuple(
+            map(lambda x: torch.from_numpy(np.array(x)).float().to(self.device), self.memory.sample(self.batch_size)))
 
         # 根据评估网络预测当前状态下的Q值
         q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)  # q_eval.shape = (batch_size,1)
@@ -115,13 +120,14 @@ class DQNs:
         self.eplison = self.eplison - self.eps_dec if self.eplison > self.eps_min else self.eps_min
 
     def learn(self):
-        if self.memory.__len__() < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
+        if self.memory.size < self.batch_size:  # 如果记忆库中的样本数小于batch_size，就不进行学习
             return
         self.learn_step_counter += 1  # 记录学习的次数
         if self.learn_step_counter % self.replace == 0:  # 每隔一段时间更新目标网络
             # 在第一次学习的时候，目标网络和评估网络的参数是一样的
             hard_update(self.target_net, self.eval_net)
-        stage, action, reward, next_stage, done = tuple(map(lambda x:torch.from_numpy(x).float().to(self.device),self.memory.sample(self.batch_size)))
+        stage, action, reward, next_stage, done = tuple(
+            map(lambda x: torch.from_numpy(np.array(x)).float().to(self.device), self.memory.sample(self.batch_size)))
 
         # 根据评估网络预测当前状态下的Q值
         q_eval = self.eval_net.forward(stage).gather(1, action.unsqueeze(1)).squeeze(1)

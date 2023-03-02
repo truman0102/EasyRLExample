@@ -1,7 +1,12 @@
 import numpy as np
 from network.layer import *
 
+
 class Conv_block(nn.Module):
+    """
+    input: (batch_size, input_channels, width, width)
+    output: (batch_size, width * width * 64)
+    """
     def __init__(self, input_channels, W, kernel_size=[8, 4, 3], stride=[4, 2, 1], padding=[0, 0, 0]):
         super(Conv_block, self).__init__()
         self.width = W
@@ -27,7 +32,7 @@ class Conv_block(nn.Module):
 
 
 class MLP_block(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim,noisy=False, training=False):
+    def __init__(self, input_dim, hidden_dim, output_dim, noisy=False, training=False):
         super(MLP_block, self).__init__()
         if noisy:
             self.fc1 = FactorizedNoisyLinear(input_dim, hidden_dim, is_training=training)
@@ -43,8 +48,10 @@ class MLP_block(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class DoubleHead_MLP_block(nn.Module):
-    def __init__(self,input_dim,hidden_dim,action_dim,noisy=False,training=False):
+    def __init__(self, input_dim, hidden_dim, action_dim, noisy=False, training=False):
+        super(DoubleHead_MLP_block, self).__init__()
         if noisy:
             self.fc1 = FactorizedNoisyLinear(input_dim, hidden_dim, is_training=training)
             self.fc2 = FactorizedNoisyLinear(hidden_dim, action_dim, is_training=training)
@@ -54,50 +61,22 @@ class DoubleHead_MLP_block(nn.Module):
             self.fc2 = nn.Linear(hidden_dim, action_dim)
             self.fc3 = nn.Linear(hidden_dim, 1)
         self.leaky_relu = nn.LeakyReLU(0.2)
-    
-    def forward(self,x):
+
+    def forward(self, x):
         x = self.fc1(x)
         x = self.leaky_relu(x)
         advantage = self.fc2(x)
         value = self.fc3(x)
-        return advantage,value
-    
-    def v(self,x):
+        return advantage, value
+
+    def v(self, x):
         x = self.fc1(x)
         x = self.leaky_relu(x)
         x = self.fc3(x)
         return x
-    
-    def a(self,x):
+
+    def a(self, x):
         x = self.fc1(x)
         x = self.leaky_relu(x)
         x = self.fc2(x)
         return x
-
-
-# class MLP_block_Q(nn.Module):
-#     """
-#     input: stage, action
-#     output: Q(s,a)
-#     """
-#     def __init__(self, input_dim,action_dim, hidden_dim_a,hidden_dim_s, output_dim=1, noisy=False, training=False):
-#         if noisy:
-#             self.fc1 = FactorizedNoisyLinear(input_dim, hidden_dim_s, is_training=training)
-#             self.fc2 = FactorizedNoisyLinear(action_dim,hidden_dim_a, is_training=training)
-#             self.fc3 = FactorizedNoisyLinear(hidden_dim_s+hidden_dim_a, output_dim, is_training=training)
-#         else:
-#             self.fc1 = nn.Linear(input_dim, hidden_dim_s)
-#             self.fc2 = nn.Linear(action_dim, hidden_dim_a)
-#             self.fc3 = nn.Linear(hidden_dim_s+hidden_dim_a, output_dim)
-        
-#         self.leaky_relu = nn.LeakyReLU(0.2)
-    
-#     def forward(self, x, a):
-#         x = self.fc1(x)
-#         x = self.leaky_relu(x)
-#         a = self.fc2(a)
-#         a = self.leaky_relu(a)
-#         x = torch.cat([x,a],dim=1)
-#         x = self.fc3(x)
-#         return x
-#         return torch.tanh(x)

@@ -10,12 +10,12 @@ class policy_net(nn.Module):
     output: action distribution
     """
 
-    def __init__(self, input_channels:int, width:int, action_dim:int, hidden_dim=512, noisy=False, trainging=False):
+    def __init__(self, input_channels: int, width: int, action_dim: int, hidden_dim=512, noisy=False, training=False):
         super(policy_net, self).__init__()
         self.feature = Conv_block(input_channels, width)
         self.feature_dim = self.feature.get_feature_dim()
         self.fc = MLP_block(self.feature_dim, hidden_dim,
-                            action_dim, noisy, trainging)
+                            action_dim, noisy, training)
 
     def forward(self, x):
         x = self.feature(x)
@@ -28,14 +28,14 @@ class GaussianPolicy(nn.Module):
     LOG_STD_MIN = -20
     eps = 1e-6
 
-    def __init__(self, input_channels:int, width:int, action_dim:int, max_action, hidden_dim=512):
+    def __init__(self, input_channels: int, width: int, action_dim: int, max_action, hidden_dim=512):
         super(GaussianPolicy, self).__init__()
         self.feature = Conv_block(input_channels, width)
         self.feature_dim = self.feature.get_feature_dim()
         self.fc = MLP_block(self.feature_dim, hidden_dim, action_dim * 2)
         self.action_range = max_action
 
-    def forward(self, x, get_logprob=False):
+    def forward(self, x):
         x = self.feature(x)
         x = self.fc(x)
         mu, log_std = torch.chunk(x, 2, dim=1)
@@ -52,12 +52,12 @@ class GaussianPolicy(nn.Module):
 
         z = Normal(0, 1).sample(mean.shape)
         # TanhNormal distribution as actions; reparameterization trick
-        action_0 = torch.tanh(mean + std*z.to(self.device))
-        action = self.action_range*action_0
+        action_0 = torch.tanh(mean + std * z.to(self.device))
+        action = self.action_range * action_0
         ''' stochastic evaluation '''
-        log_prob = Normal(mean, std).log_prob(mean + std*z.to(self.device)) - \
-            torch.log(1. - action_0.pow(2) + self.eps) - \
-            np.log(self.action_range)
+        log_prob = Normal(mean, std).log_prob(mean + std * z.to(self.device)) - \
+                   torch.log(1. - action_0.pow(2) + self.eps) - \
+                   np.log(self.action_range)
         # loga+logb = log(ab)
         ''' deterministic evaluation '''
         # log_prob = Normal(mean, std).log_prob(mean) - torch.log(1. - torch.tanh(mean).pow(2) + epsilon) -  np.log(self.action_range)
